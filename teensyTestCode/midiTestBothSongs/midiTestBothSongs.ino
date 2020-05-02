@@ -1,6 +1,10 @@
 /***Plays Amazing Grace and Meme Mashup over MIDI USB***/
 /***With the option to play incorrect notes for game testing purposes***/
 
+/*To test Meme Mashup, connect a wire from ground to pin D0. To test Amazing Grace, disconnect that wire.
+  To test playing an incorrect note, connect a wire from ground to pin D1
+  To restart a song from the beginning, change the state of pin D0 twice, which switches the songs twice.*/
+
 int mMNoteList[240] =
   { 55, 62, 59, 59, 57, 55, 55, 60, 59, 59, 57, 57, 55, 55, 62, 59, 59, 57, 57, 55, 55, 52, 55, 55, 62, 59, 59, 57, 57, 55, 55, 60,
   59, 59, 57, 57, 55, 55, 62, 59, 59, 57, 55, 55, 57, 52,
@@ -98,7 +102,7 @@ void loop() {
        usbMIDI.sendNoteOn(mMNoteList[j], 99, channel);
        int currentNoteDuration = mMNoteDuration[j];
        while ( currentNoteDuration > 0) {
-         delay(sixteenthDuration);
+         delay(sixteenthDuration*1.5);
          currentNoteDuration--;
        }
        usbMIDI.sendNoteOff(mMNoteList[j], 0, channel);
