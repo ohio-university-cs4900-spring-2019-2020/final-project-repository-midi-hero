@@ -51,7 +51,7 @@ using namespace Aftr;
 
 void mycallback(double deltatime, std::vector< unsigned char > *message, void */*userData*/)
 {
-	int messageType = noteOff;
+	int messageType = 0;
 	unsigned int nBytes = message->size();
 	for (unsigned int i = 0; i < nBytes; i++) {
 		std::cout << "Byte " << i << " = " << (int)message->at(i) << ", ";
@@ -61,6 +61,9 @@ void mycallback(double deltatime, std::vector< unsigned char > *message, void */
 		if (messageType == noteOn && i == 1) {
 			((GLViewNewModule*)ManagerGLView::getGLView())->notePlayed = (int)message->at(i);
 			((GLViewNewModule*)ManagerGLView::getGLView())->noteOnRecieved = true;
+		}
+		else if (messageType == noteOff) {
+			((GLViewNewModule*)ManagerGLView::getGLView())->noteOffRecieved = true;
 		}
 	}
 }
@@ -136,14 +139,12 @@ void GLViewNewModule::updateWorld()
 		noteOnRecieved = false;
 		std::cout << "\n The current note being played is: " << notePlayed << "\n";
 		if (currentSong->checkNote(notePlayed)) {
-			// Indicate Correct Note
-			// Display next fingering
-
+			correctNote = 1;
 		}
 		else {
-			// Indicate incorrect note
+			correctNote = 0;
 		}
-		// Start note sound
+		// Play the note sound
 		char noteSoundPath[] = "../mm/sounds/note00.wav";
 		int noteTens = notePlayed / 10;
 		char noteDigit = '0' + noteTens;
@@ -151,15 +152,24 @@ void GLViewNewModule::updateWorld()
 		int noteOnes = notePlayed % 10;
 		noteSoundPath[18] = '0' + noteOnes;
 		char* noteSoundPathIrrklang = noteSoundPath;
-		irrklang::ISound* noteSound = soundEngine->play2D(noteSoundPath, false);
-		//xwingSound->setVolume(1);
+
+		noteSound = soundEngine->play2D(noteSoundPath, false);
+
+		// Future feature: MIDI note velocity could be mapped to the note volume in the future
+		//noteSound->setVolume(1);
 	}
 	else if (noteOffRecieved) {
 		noteOffRecieved = false;
+		//noteSound->stop();
 		if (currentSong->checkEndOfSong()) {
-			// Display song completed indicator
+			// song completed indicator
+			irrklang::ISound* applause = soundEngine->play2D("../mm/sounds/applause.wav", false);
+			irrklang::ISound* wellDone = soundEngine->play2D("../mm/sounds/wellDone.wav", false);
+
 		}
 		// Update measure indicator
+		updateMeasureTracker();
+
 	}
 }
 
@@ -210,6 +220,47 @@ void GLViewNewModule::onKeyDown( const SDL_KeyboardEvent& key )
   {
 	  currentSong->reset();
   }
+  if (key.keysym.sym == SDLK_c)
+  {
+	  this->cam = new CameraStandardEZNav(this, &this->mouseHandler);
+  }
+  /* //TEST CODE used only for programming the game
+  if (key.keysym.sym == SDLK_w)
+  {
+	  Aftr::Vector mMMeasureTrackerBluePos = mMMeasureTrackerBlue->getPosition();
+	  mMMeasureTrackerBluePos.y += 1;
+	  mMMeasureTrackerBlue->setPosition(mMMeasureTrackerBluePos);
+  }
+  if (key.keysym.sym == SDLK_a)
+  {
+	  Aftr::Vector mMMeasureTrackerBluePos = mMMeasureTrackerBlue->getPosition();
+	  mMMeasureTrackerBluePos.x -= 1;
+	  std::cout << mMMeasureTrackerBluePos << "\n";
+	  mMMeasureTrackerBlue->setPosition(mMMeasureTrackerBluePos);
+  }
+  if (key.keysym.sym == SDLK_s)
+  {
+	  Aftr::Vector mMMeasureTrackerBluePos = mMMeasureTrackerBlue->getPosition();
+	  mMMeasureTrackerBluePos.y -= 1;
+	  std::cout << mMMeasureTrackerBluePos << "\n";
+	  mMMeasureTrackerBlue->setPosition(mMMeasureTrackerBluePos);
+  }
+  if (key.keysym.sym == SDLK_d)
+  {
+	  Aftr::Vector mMMeasureTrackerBluePos = mMMeasureTrackerBlue->getPosition();
+	  mMMeasureTrackerBluePos.x += 1;
+	  std::cout << mMMeasureTrackerBluePos << "\n";
+	  mMMeasureTrackerBlue->setPosition(mMMeasureTrackerBluePos);
+  }
+  if (key.keysym.sym == SDLK_l) {
+	  Aftr::Vector cameraDirection = this->getCamera()->getLookDirection();
+	  std::cout << cameraDirection << "\n\n\n";
+  }
+  if (key.keysym.sym == SDLK_p) {
+	  Aftr::Vector cameraPosition = this->getCamera()->getPosition();
+	  std::cout << cameraPosition << "\n\n\n";
+  }*/
+
 }
 
 
@@ -240,33 +291,11 @@ void Aftr::GLViewNewModule::loadMap()
    
    //SkyBox Textures readily available
    std::vector< std::string > skyBoxImageNames; //vector to store texture paths
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_water+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_dust+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_mountains+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_winter+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/early_morning+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_afternoon+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_cloudy+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_cloudy3+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_day+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_day2+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_deepsun+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_evening+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_morning+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_morning2+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_noon+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/sky_warp+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_Hubble_Nebula+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_gray_matter+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_easter+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_hot_nebula+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_ice_field+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_lemon_lime+6.jpg" );
    //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_milk_chocolate+6.jpg" );
-   skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_solar_bloom+6.jpg" );
-   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_thick_rb+6.jpg" );
+   //skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_solar_bloom+6.jpg" );
+   skyBoxImageNames.push_back( ManagerEnvironmentConfiguration::getSMM() + "/images/skyboxes/space_thick_rb+6.jpg" );
 
-   float ga = 0.1f; //Global Ambient Light level for this module
+   float ga = 1.0f; //Global Ambient Light level for this module
    ManagerLight::setGlobalAmbientLight( aftrColor4f( ga, ga, ga, 1.0f ) );
    WOLight* light = WOLight::New();
    light->isDirectionalLight( true );
@@ -283,106 +312,44 @@ void Aftr::GLViewNewModule::loadMap()
    wo->setLabel( "Sky Box" );
    wo->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
    worldLst->push_back( wo );
- 
-   ////Create the infinite grass plane (the floor)
-   /*
-   wo = WO::New( grass, Vector( 1, 1, 1 ), MESH_SHADING_TYPE::mstFLAT );
-   wo->setPosition( Vector( 0, 0, 0 ) );
-   wo->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-   ModelMeshSkin& grassSkin = wo->getModel()->getModelDataShared()->getModelMeshes().at( 0 )->getSkins().at( 0 );
-   grassSkin.getMultiTextureSet().at( 0 )->setTextureRepeats( 5.0f );
-   grassSkin.setAmbient( aftrColor4f( 0.4f, 0.4f, 0.4f, 1.0f ) ); //Color of object when it is not in any light
-   grassSkin.setDiffuse( aftrColor4f( 1.0f, 1.0f, 1.0f, 1.0f ) ); //Diffuse color components (ie, matte shading color of this object)
-   grassSkin.setSpecular( aftrColor4f( 0.4f, 0.4f, 0.4f, 1.0f ) ); //Specular color component (ie, how "shiney" it is)
-   grassSkin.setSpecularCoefficient( 10 ); // How "sharp" are the specular highlights (bigger is sharper, 1000 is very sharp, 10 is very dull)
-   wo->setLabel( "Grass" );
-   worldLst->push_back( wo );
-   */
-
-   ////Create the infinite grass plane that uses the Open Dynamics Engine (ODE)
-   //wo = WOStatic::New( grass, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT );
-   //((WOStatic*)wo)->setODEPrimType( ODE_PRIM_TYPE::PLANE );
-   //wo->setPosition( Vector(0,0,0) );
-   //wo->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-   //wo->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0).getMultiTextureSet().at(0)->setTextureRepeats( 5.0f );
-   //wo->setLabel( "Grass" );
-   //worldLst->push_back( wo );
-
-   ////Create the infinite grass plane that uses NVIDIAPhysX(the floor)
-   //wo = WONVStaticPlane::New( grass, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT );
-   //wo->setPosition( Vector(0,0,0) );
-   //wo->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-   //wo->getModel()->getModelDataShared()->getModelMeshes().at(0)->getSkins().at(0).getMultiTextureSet().at(0)->setTextureRepeats( 5.0f );
-   //wo->setLabel( "Grass" );
-   //worldLst->push_back( wo );
-
-   ////Create the infinite grass plane (the floor)
-   //wo = WONVPhysX::New( shinyRedPlasticCube, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT );
-   //wo->setPosition( Vector(0,0,50.0f) );
-   //wo->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-   //wo->setLabel( "Grass" );
-   //worldLst->push_back( wo );
-
-   //wo = WONVPhysX::New( shinyRedPlasticCube, Vector(1,1,1), MESH_SHADING_TYPE::mstFLAT );
-   //wo->setPosition( Vector(0,0.5f,75.0f) );
-   //wo->renderOrderType = RENDER_ORDER_TYPE::roOPAQUE;
-   //wo->setLabel( "Grass" );
-   //worldLst->push_back( wo );
-
-   //wo = WONVDynSphere::New( ManagerEnvironmentConfiguration::getVariableValue("sharedmultimediapath") + "/models/sphereRp5.wrl", Vector(1.0f, 1.0f, 1.0f), mstSMOOTH );
-   //wo->setPosition( 0,0,100.0f );
-   //wo->setLabel( "Sphere" );
-   //this->worldLst->push_back( wo );
-
-   //wo = WOHumanCal3DPaladin::New( Vector( .5, 1, 1 ), 100 );
-   //((WOHumanCal3DPaladin*)wo)->rayIsDrawn = false; //hide the "leg ray"
-   //((WOHumanCal3DPaladin*)wo)->isVisible = false; //hide the Bounding Shell
-   //wo->setPosition( Vector(20,20,20) );
-   //wo->setLabel( "Paladin" );
-   //worldLst->push_back( wo );
-   //actorLst->push_back( wo );
-   //netLst->push_back( wo );
-   //this->setActor( wo );
-   //
-   //wo = WOHumanCyborg::New( Vector( .5, 1.25, 1 ), 100 );
-   //wo->setPosition( Vector(20,10,20) );
-   //wo->isVisible = false; //hide the WOHuman's bounding box
-   //((WOHuman*)wo)->rayIsDrawn = false; //show the 'leg' ray
-   //wo->setLabel( "Human Cyborg" );
-   //worldLst->push_back( wo );
-   //actorLst->push_back( wo ); //Push the WOHuman as an actor
-   //netLst->push_back( wo );
-   //this->setActor( wo ); //Start module where human is the actor
-
-   ////Create and insert the WOWheeledVehicle
-   //std::vector< std::string > wheels;
-   //std::string wheelStr( "../../../shared/mm/models/WOCar1970sBeaterTire.wrl" );
-   //wheels.push_back( wheelStr );
-   //wheels.push_back( wheelStr );
-   //wheels.push_back( wheelStr );
-   //wheels.push_back( wheelStr );
-   //wo = WOCar1970sBeater::New( "../../../shared/mm/models/WOCar1970sBeater.wrl", wheels );
-   //wo->setPosition( Vector( 5, -15, 20 ) );
-   //wo->setLabel( "Car 1970s Beater" );
-   //((WOODE*)wo)->mass = 200;
-   //worldLst->push_back( wo );
-   //actorLst->push_back( wo );
-   //this->setActor( wo );
-   //netLst->push_back( wo );
-   //wo->rotate(z,radians
-
-   /*on update set poition of camera or object to the other  with offset
-	   vector of offset transformed through the display matrix (4 by 4)
-	   look direction of camera set 
-	   set position and get for wo
-	   aftr utilities has matrix functions*/
 	   
    //Create the sound engine
    soundEngine = irrklang::createIrrKlangDevice();
 
+   //loadMemeMashup(); //other song option
    loadAmazingGrace(); //default sheet music
+   this->cam = new CameraStandardEZNav(this, &this->mouseHandler); //reset the camera
 
+   //Load the images for the sheet music and measure trackers
+   std::string aGImagePath = (ManagerEnvironmentConfiguration::getLMM() + "/images/amazingGrace.png");
+   WOQuad* aGSheet = WOQuad::New(aGImagePath, 100, 167);
+   aGSheet->setPosition(Vector(0, 0, -100));
+   worldLst->push_back(aGSheet);
 
+   std::string measureTrackerRedImagePath = (ManagerEnvironmentConfiguration::getLMM() + "/images/wrongNote.png");
+   aGMeasureTrackerRed = WOQuad::New(measureTrackerRedImagePath, 7, 20);
+   aGMeasureTrackerRed->setPosition(Vector(0, 0, -101));
+   worldLst->push_back(aGMeasureTrackerRed);
+
+   std::string measureTrackerBlueImagePath = (ManagerEnvironmentConfiguration::getLMM() + "/images/rightNote.png");
+   aGMeasureTrackerBlue = WOQuad::New(measureTrackerBlueImagePath, 7, 20);
+   aGMeasureTrackerBlue->setPosition(Vector(0, 0, -99));
+   worldLst->push_back(aGMeasureTrackerBlue);
+
+   std::string mMImagePath = (ManagerEnvironmentConfiguration::getLMM() + "/images/memeMashup.png");
+   WOQuad* mMSheet = WOQuad::New(mMImagePath, 140, 100);
+   mMSheet->setPosition(Vector(0, 0, 100));
+   worldLst->push_back(mMSheet);
+
+   mMMeasureTrackerRed = WOQuad::New(measureTrackerRedImagePath, 5, 13);
+   mMMeasureTrackerRed->setPosition(Vector(0, 0, 99));
+   worldLst->push_back(mMMeasureTrackerRed);
+
+   mMMeasureTrackerBlue = WOQuad::New(measureTrackerBlueImagePath, 5, 13);
+   mMMeasureTrackerBlue->setPosition(Vector(0, 0, 101));
+   worldLst->push_back(mMMeasureTrackerBlue);
+
+   // Setup for MIDI input
 
    RtMidiIn *midiin = 0;
 
@@ -396,9 +363,7 @@ void Aftr::GLViewNewModule::loadMap()
 		   std::cerr << "\n NO MIDI PORT SELECTED\n";
 	   }
 
-	   // Set our callback function.  This should be done immediately after
-	   // opening the port to avoid having incoming messages written to the
-	   // queue instead of sent to the callback function.
+	   // Set our callback function.
 	   midiin->setCallback(&mycallback);
 
 	   // Don't ignore sysex, timing, or active sensing messages.
@@ -409,50 +374,6 @@ void Aftr::GLViewNewModule::loadMap()
 	   error.printMessage();
    }
 
-
-
-
-
-   /*
-   //create the star destroyer
-   std::string starDestroyer(ManagerEnvironmentConfiguration::getLMM() + "/models/starDestroyer.stl");
-   enemyShip = WO::New(starDestroyer, Vector(4, 4, 4), MESH_SHADING_TYPE::mstFLAT);
-   enemyShip->setPosition(Vector(0, 0, 0));
-   enemyShip->setLabel("Enemy Ship");
-   Aftr::Vector starDestroyerDirection = (1.5, 1.5, 1.5);
-   enemyShip->getModel()->setLookDirection(starDestroyerDirection);
-  //enemyShip->getModel()->setLookDirection(Aftr::Vector(0, 0, 0));
-   worldLst->push_back(enemyShip);
-
-   std::string ywingModel(ManagerEnvironmentConfiguration::getLMM() + "/models/Ywing.stl");
-   ywing = WO::New(ywingModel, Vector(0.1, 0.1, 0.1));
-   ywingPosition = (50.0, 50.0, 0.0);
-   ywing->setPosition(ywingPosition);
-   ManagerGLView::getGLView()->getWorldContainer()->push_back(ywing);
-
-   //Create Xwing
-   xwing = (ManagerEnvironmentConfiguration::getLMM() + "/models/Xwing.stl");
-   playerShip = WO::New(xwing, Vector(.1, .1, .1), MESH_SHADING_TYPE::mstFLAT);
-   playerShip->setPosition(Vector(-100, -100, -100));
-   playerShip->setLabel("Player Ship");
-   worldLst->push_back(playerShip);
-   */
-
-
-   //fonts 
-   /*
-   WOGUILabel* label = WOGUILabel::New(nullptr);
-   label->setText("A long long time ago...");
-   label->setColor(255, 0, 0, 255);
-   label->setFontSize(30); //font size is correlated with world size
-   label->setPosition(Vector(0, 1, 0));
-   label->setFontOrientation(FONT_ORIENTATION::foLEFT_TOP);
-   label->setFontPath(comicSans);
-   worldLst->push_back(label);
-   */
-
-   //directory begins in \modules\NewModule\cwin64
-   //C:\Users\mattr\Documents\College Docs\Game Engine Design\modules\NewModule\cwin64
    createNewModuleWayPoints();
 }
 
@@ -471,23 +392,38 @@ void GLViewNewModule::createNewModuleWayPoints()
 
 void GLViewNewModule::loadAmazingGrace()
 {
-	
+	// Changing the cameras direction here breaks the camera unless it has first been moved, so the camera is reset after this is first ran
+	// After moving the camera once, this works as intended
+	this->getCamera()->setPosition(Aftr::Vector(0, 0, 1));
+	this->getCamera()->setCameraLookAtPoint(Aftr::Vector(0, 0, -1));
 	delete this->currentSong;
-	int aGNoteList[34] =
+	int aGNoteList[35] =
 	  { 48, 53, 57, 53, 57, 55, 53, 50, 48, 48,				// Line one
 		53, 57, 53, 57, 55, 60, 57,							// Line two
 		60, 57, 60, 57, 53, 48, 50, 53, 53, 50, 48, 48,		// Line three
-		53, 57, 53, 57, 55 };								// Line four
-	currentSong = new sheetMusic(aGNoteList, 34);
-	//set look direction
-
+		53, 57, 53, 57, 55, 53 };								// Line four
+	currentSong = new sheetMusic(aGNoteList, 35);
+	currentSong->songName = "Amazing Grace";
+	int aGMeasureList[35] =
+	{ 0, 1, 1, 1, 2, 2, 3, 3, 4, 4,
+	  5, 5, 5, 6, 6, 7, 8,
+	  9, 9, 9, 9, 10, 10, 11, 11, 11, 11, 12, 12,
+	  13, 13, 13, 14, 14, 15 };
+	currentSong->setMeasures(aGMeasureList, 35);
+	int aGXCoords[16] = { -46, -19, 8, 34, 60, -42, -5, 28, 58, -42, -7, 27, 59, -43, -7, 27 };
+	int aGYCoords[16] = { 9, 9, 9, 9, 9, -7, -7, -7, -7, -25, -25, -25, -25, -42, -42, -42 };
+		
+	currentSong->setmeasureTrackerX(aGXCoords, 15);
+	currentSong->setmeasureTrackerY(aGYCoords, 15);
 }
 
 
 void GLViewNewModule::loadMemeMashup()
 {
+	this->getCamera()->setPosition(Aftr::Vector(0, 0, 250));
+	this->getCamera()->setCameraLookAtPoint(Aftr::Vector(0, 0, 0));
 	delete currentSong;
-	int mMNoteList[217] =
+	int mMNoteList[240] =
 	{ 55, 62, 59, 59, 57, 55, 55, 60, 59, 59, 57, 57, 55, 55, 62, 59, 59, 57, 57, 55, 55, 52, 55, 55, 62, 59, 59, 57, 57, 55, 55, 60,
 	59, 59, 57, 57, 55, 55, 62, 59, 59, 57, 55, 55, 57, 52,
 		//never gonna
@@ -495,13 +431,70 @@ void GLViewNewModule::loadMemeMashup()
 		55, 57, 54, 52, 50, 50, 57, 55, 50, 52, 55, 52, 59, 59, 57, 50, 52, 55, 52, 62, 54, 55, 54, 52, 50, 52, 55, 52, 55, 57, 54, 52, 50, 50, 57, 55,
 		// Epic sax guy
 		62, 62, 62, 62, 60, 62, 62, 62, 62, 62, 60, 62, 62, 65, 62, 60, 60, 58, 55, 55, 57, 58, 55,
+		62, 62, 62, 62, 60, 62, 62, 62, 62, 62, 60, 62, 62, 65, 62, 60, 60, 58, 55, 55, 57, 58, 55,
 		// Sandstorm
 		59, 59, 59, 59, 59, 59, 59,
 		59, 59, 59, 59, 59, 64, 64, 64, 64, 64, 64, 64, 62, 62, 62, 62, 62, 62, 62, 57, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 64, 64, 59, 59, 59, 59, 59, 59, 59,
 		59, 59, 59, 59, 59, 64, 64, 64, 64, 64, 64, 64, 62, 62, 62, 62, 62, 62, 62, 57, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 64, 64, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59 };
-	currentSong = new sheetMusic(mMNoteList, 217);
-	//set look direction
+	currentSong = new sheetMusic(mMNoteList, 240);
+	currentSong->songName = "Meme Mashup";
+	int mMMeasureList[240] =
+	{ 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5,
+	  6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 
+	  //never gonna
+	  8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 
+	  11, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 16, 16,
+	  // Epic sax guy
+	  17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 20, 20, 20, 
+	  17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20, 20, 20, 20,
+	  // Sandstorm
+	  21, 21, 21, 21, 21, 21, 21, 
+	  22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23,   24, 24, 24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 
+	  28, 28, 28, 28, 28, 28, 28, 29, 29, 29, 29, 29, 29, 29, 30, 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 32, 32, 32, 32, 32, 32, 32, 33, 33, 33, 33, 33, 33, 33, 
+	  34, 34, 34, 34, 34 }; //35 measures
+	currentSong->setMeasures(mMMeasureList, 240);
 
+	int mMXCoords[35] = { -36, -22, -6, 10, 24, 37, 
+		-33, -15, 0, 17, 35, 
+		-35, -20, -5, 12, 28, 41, 
+		-31, -15, 0, 18, 37, 
+		-35, -20, -5, 9, 24, 38,
+		-34, -19, -5, 9, 23, 38,
+		-14	};
+	int mMYCoords[35] = {
+		32, 32, 32, 32, 32, 32,
+		15, 15, 15, 15, 15,
+		-1, -1, -1, -1, -1, -1,
+		-19, -19, -19, -19, -19,
+		-36, -36, -36, -36, -36, -36,
+		-53, -53, -53, -53, -53, -53,
+		-63 };
+	currentSong->setmeasureTrackerX(mMXCoords, 35);
+	currentSong->setmeasureTrackerY(mMYCoords, 35);
+}
+
+
+void GLViewNewModule::updateMeasureTracker() {
+	if (currentSong->songName == "Amazing Grace") {
+		if (correctNote) {
+			aGMeasureTrackerBlue->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), -99));
+			aGMeasureTrackerRed->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), -101));
+		}
+		else {
+			aGMeasureTrackerBlue->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), -101));
+			aGMeasureTrackerRed->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), -99));
+		}
+	}
+	else if (currentSong->songName == "Meme Mashup") {
+		if (correctNote) {
+			mMMeasureTrackerBlue->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), 101));
+			mMMeasureTrackerRed->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), 99));
+		}
+		else {
+			mMMeasureTrackerBlue->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), 99));
+			mMMeasureTrackerRed->setPosition(Vector(currentSong->getMeasureTrackerX(), currentSong->getMeasureTrackerY(), 101));
+		}
+	}
 }
 
 
@@ -517,6 +510,7 @@ void GLViewNewModule::usage(void) {
 
 bool GLViewNewModule::chooseMidiPort(RtMidiIn *rtmidi)
 {
+	/*
 	std::cout << "\nWould you like to open a virtual input port? [y/N] ";
 
 	std::string keyHit;
@@ -525,7 +519,7 @@ bool GLViewNewModule::chooseMidiPort(RtMidiIn *rtmidi)
 		rtmidi->openVirtualPort();
 		return true;
 	}
-
+	*/
 	std::string portName;
 	unsigned int i = 0, nPorts = rtmidi->getPortCount();
 	if (nPorts == 0) {
@@ -546,7 +540,7 @@ bool GLViewNewModule::chooseMidiPort(RtMidiIn *rtmidi)
 			std::cout << "\nChoose a port number: ";
 			std::cin >> i;
 		} while (i >= nPorts);
-		std::getline(std::cin, keyHit);  // used to clear out stdin
+		//std::getline(std::cin, keyHit);  // used to clear out stdin
 	}
 
 	rtmidi->openPort(i);

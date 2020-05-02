@@ -4,6 +4,7 @@
 #include "irrKlang.h"
 #include "RtMidi.h"
 #include "sheetMusic.h"
+#include "WOQuad.h"
 
 
 namespace Aftr
@@ -59,16 +60,24 @@ public:
    virtual void loadAmazingGrace();
    virtual void loadMemeMashup();
    virtual void usage();
-   //friend void mycallback(double deltatime, std::vector< unsigned char > *message, void */*userData*/);
    virtual bool chooseMidiPort(RtMidiIn *rtmidi);
+   virtual void updateMeasureTracker();
 
    #define noteOn 144
    #define noteOff 128
 
    int notePlayed = 0; //range of 0 to 127
    bool noteOnRecieved = 0;
-   bool noteOffRecieved = 1;
+   bool noteOffRecieved = 0;
+   bool correctNote = 0;
    sheetMusic* currentSong = NULL;
+
+   WOQuad* aGMeasureTrackerBlue = NULL;
+   WOQuad* aGMeasureTrackerRed = NULL;
+   WOQuad* mMMeasureTrackerBlue = NULL;
+   WOQuad* mMMeasureTrackerRed = NULL;
+
+   irrklang::ISound* noteSound = NULL;
 
 protected:
    GLViewNewModule( const std::vector< std::string >& args );
